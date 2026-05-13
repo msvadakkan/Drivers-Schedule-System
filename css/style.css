@@ -17,6 +17,24 @@
   --text-muted:     #94a3b8;
 }
 
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -26,6 +44,9 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* ── Page entry ── */
+body { animation: fadeIn .35s ease; }
 
 /* ── Nav ── */
 .app-nav {
@@ -66,6 +87,7 @@ body {
 .main-content { max-width: 1180px; margin: 28px auto; padding: 0 20px; }
 
 /* ── Stats ── */
+.stats-row { animation: slideDown .4s ease; }
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -105,6 +127,7 @@ body {
 .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 /* ── Card ── */
+.card { animation: slideUp .4s ease; }
 .card {
   background: var(--surface);
   border-radius: 14px;
@@ -163,6 +186,7 @@ tr:hover td { background: #fdf5f9; }
   background: var(--surface); border-radius: 18px;
   box-shadow: 0 24px 64px rgba(0,0,0,.22);
   padding: 44px; width: 100%; max-width: 400px;
+  animation: popIn .4s ease;
 }
 .login-logo { text-align: center; margin-bottom: 28px; }
 .login-logo .icon { font-size: 52px; }
@@ -206,6 +230,8 @@ tr:hover td { background: #fdf5f9; }
 }
 
 /* ── Modal ── */
+.modal-overlay { animation: fadeIn .2s ease; }
+.modal { animation: popIn .25s ease; }
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(26,18,37,.5);
@@ -231,6 +257,7 @@ tr:hover td { background: #fdf5f9; }
 
 /* ── Schedule cards (dashboard) ── */
 .schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 16px; }
+.sched-card { animation: slideUp .38s ease; }
 .sched-card {
   background: var(--surface); border-radius: 14px;
   box-shadow: 0 1px 6px rgba(181,0,108,.08);
