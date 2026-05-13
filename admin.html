@@ -22,23 +22,31 @@
     <div class="stats-row" id="stats-row">
       <div class="stat-card"><div class="stat-num" id="stat-drivers">—</div><div class="stat-label">Drivers</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-nurses">—</div><div class="stat-label">Nurses</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Schedules</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Schedules</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-upcoming">—</div><div class="stat-label">Upcoming</div></div>
+      <div class="stat-card" style="cursor:pointer" onclick="switchTab('reports')">
+        <div class="stat-num" id="stat-late" style="color:#dc2626">—</div>
+        <div class="stat-label">Late Reports</div>
+      </div>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab-btn active" data-tab="schedules">📅 Schedules</button>
+      <button class="tab-btn active" data-tab="schedules">☀️ Today</button>
       <button class="tab-btn" data-tab="calendar">📆 Calendar</button>
+      <button class="tab-btn" data-tab="all-schedules">📅 All Schedules</button>
       <button class="tab-btn" data-tab="drivers">🚗 Drivers</button>
       <button class="tab-btn" data-tab="nurses">👩‍⚕️ Nurses</button>
+      <button class="tab-btn" data-tab="reports">⚠️ Late Reports</button>
     </div>
 
     <!-- Tab panels -->
-    <div id="panel-schedules" class="tab-panel"></div>
-    <div id="panel-calendar"  class="tab-panel" style="display:none"></div>
-    <div id="panel-drivers"   class="tab-panel" style="display:none"></div>
-    <div id="panel-nurses"    class="tab-panel" style="display:none"></div>
+    <div id="panel-schedules"     class="tab-panel"></div>
+    <div id="panel-calendar"      class="tab-panel" style="display:none"></div>
+    <div id="panel-all-schedules" class="tab-panel" style="display:none"></div>
+    <div id="panel-drivers"       class="tab-panel" style="display:none"></div>
+    <div id="panel-nurses"        class="tab-panel" style="display:none"></div>
+    <div id="panel-reports"       class="tab-panel" style="display:none"></div>
   </div>
 
   <!-- Modal -->

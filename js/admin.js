@@ -1,12 +1,13 @@
 // ─── State ───────────────────────────────────────────────────────────────────
 let allUsers     = [];
 let allSchedules = [];
+let lateReports  = [];
 let currentTab   = 'schedules';
 const today      = new Date().toISOString().slice(0, 10);
 let calYear      = new Date().getFullYear();
 let calMonth     = new Date().getMonth();
 let calSelected  = null;
-let scheduleDateFilter = '';
+let scheduleDateFilter = today; // default: today
 
 // ─── API helper ──────────────────────────────────────────────────────────────
 async function api(url, method = 'GET', body = null) {
@@ -57,10 +58,15 @@ function waUrl(phone, text = '') {
 })();
 
 async function loadAll() {
-  const [u, s] = await Promise.all([api('api/users.php'), api('api/schedules.php')]);
+  const [u, s, r] = await Promise.all([
+    api('api/users.php'),
+    api('api/schedules.php'),
+    api('api/late-report.php')
+  ]);
   if (!u || !s) return;
   allUsers     = u;
   allSchedules = s;
+  lateReports  = r || [];
   renderStats();
   renderTab(currentTab);
 }
@@ -68,48 +74,70 @@ async function loadAll() {
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 function setupTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentTab = btn.dataset.tab;
-      document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
-      document.getElementById(`panel-${currentTab}`).style.display = '';
-      renderTab(currentTab);
-    });
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 }
 
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+  currentTab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById(`panel-${tab}`);
+  if (panel) panel.style.display = '';
+  renderTab(tab);
+}
+
 function renderTab(tab) {
-  if (tab === 'schedules') renderSchedules();
-  else if (tab === 'calendar') renderCalendar();
-  else if (tab === 'drivers') renderUsers('driver');
-  else if (tab === 'nurses')  renderUsers('nurse');
+  if      (tab === 'schedules')     renderSchedules();
+  else if (tab === 'calendar')      renderCalendar();
+  else if (tab === 'all-schedules') renderAllSchedules();
+  else if (tab === 'drivers')       renderUsers('driver');
+  else if (tab === 'nurses')        renderUsers('nurse');
+  else if (tab === 'reports')       renderLateReports();
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
 function renderStats() {
-  const drivers  = allUsers.filter(u => u.role === 'driver').length;
-  const nurses   = allUsers.filter(u => u.role === 'nurse').length;
-  const upcoming = allSchedules.filter(s => s.date >= today).length;
+  const drivers   = allUsers.filter(u => u.role === 'driver').length;
+  const nurses    = allUsers.filter(u => u.role === 'nurse').length;
+  const upcoming  = allSchedules.filter(s => s.date >= today).length;
+  const lateToday = lateReports.filter(r => r.schedule_date === today).length;
   document.getElementById('stat-drivers').textContent  = drivers;
   document.getElementById('stat-nurses').textContent   = nurses;
   document.getElementById('stat-total').textContent    = allSchedules.length;
   document.getElementById('stat-upcoming').textContent = upcoming;
+  document.getElementById('stat-late').textContent     = lateToday;
 }
 
-// ─── Schedules panel ─────────────────────────────────────────────────────────
+// ─── Today panel ─────────────────────────────────────────────────────────────
 function renderSchedules() {
-  const panel = document.getElementById('panel-schedules');
-  const filtered = scheduleDateFilter
-    ? allSchedules.filter(s => s.date === scheduleDateFilter)
-    : allSchedules;
+  const panel    = document.getElementById('panel-schedules');
+  const filtered = allSchedules.filter(s => s.date === today);
+  const todayLate = lateReports.filter(r => r.schedule_date === today);
 
-  if (allSchedules.length === 0) {
-    panel.innerHTML = `<div class="card">
-      <div class="card-header"><h2>All Schedules</h2>
-        <button class="btn btn-primary" onclick="openScheduleModal()">+ Add Schedule</button>
+  let lateHtml = '';
+  if (todayLate.length > 0) {
+    const lRows = todayLate.map(r => `
+      <div class="late-row">
+        <span class="badge" style="background:#fef3c7;color:#92400e">⏰ Late</span>
+        <strong>${esc(r.nurse_name)}</strong>
+        <span style="color:#64748b">reported by ${esc(r.driver_name)} at ${esc(r.reported_at.slice(11,16))}</span>
+      </div>`).join('');
+    lateHtml = `<div class="card" style="margin-bottom:16px">
+      <div class="card-header" style="margin-bottom:10px"><h2>⚠️ Late Reports Today</h2></div>
+      <div style="display:flex;flex-direction:column;gap:8px">${lRows}</div>
+    </div>`;
+  }
+
+  if (filtered.length === 0) {
+    panel.innerHTML = lateHtml + `<div class="card">
+      <div class="card-header">
+        <h2>☀️ Today — ${esc(fmtDate(today))}</h2>
+        <button class="btn btn-primary" onclick="openScheduleModal(null,'${today}')">+ Add for Today</button>
       </div>
-      <div class="empty-state"><div class="icon">📅</div><p>No schedules yet. Add one to get started.</p></div>
+      <div class="empty-state"><div class="icon">📅</div><p>No schedules for today.</p></div>
     </div>`;
     return;
   }
@@ -118,18 +146,21 @@ function renderSchedules() {
     const trips = s.trips || [];
     const nursesHtml = trips.length === 0
       ? `<span class="badge badge-unassigned">No nurses</span>`
-      : trips.map(t => `
+      : trips.map(t => {
+          const isLate = lateReports.some(r => r.schedule_id == s.id && r.nurse_id == t.nurse_id);
+          return `
           <div class="trip-summary">
             <span class="badge badge-nurse">${esc(t.nurse_name || 'Unassigned')}</span>
+            ${isLate ? `<span class="badge" style="background:#fef3c7;color:#92400e;font-size:11px">⏰ Late</span>` : ''}
             <span class="trip-time">${esc(fmtTime(t.pickup_time))}</span>
             <span class="trip-route">${esc(t.pickup_location)} → ${esc(t.drop_location)}</span>
-          </div>`).join('');
-    const waLink = s.driver_phone ? waUrl(s.driver_phone, `Hi ${s.driver_name}, have you reached the pickup location?`) : '';
+          </div>`;}).join('');
+    const waLink = s.driver_phone ? waUrl(s.driver_phone, `Hi ${s.driver_name}, checking on today's schedule.`) : '';
     return `
     <tr>
-      <td><strong>${esc(fmtDate(s.date))}</strong></td>
       <td>${s.driver_name
-        ? `<div>${esc(s.driver_name)}</div><div class="td-sub">${esc(s.driver_phone || 'No phone')}</div>
+        ? `<div style="font-weight:600">${esc(s.driver_name)}</div>
+           <div class="td-sub">${esc(s.driver_phone || 'No phone')}</div>
            ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px">💬 WhatsApp</a>` : ''}`
         : `<span class="badge badge-unassigned">Unassigned</span>`}</td>
       <td>${nursesHtml}</td>
@@ -143,10 +174,62 @@ function renderSchedules() {
     </tr>`;
   }).join('');
 
+  panel.innerHTML = lateHtml + `<div class="card">
+    <div class="card-header">
+      <h2>☀️ Today — ${esc(fmtDate(today))}</h2>
+      <button class="btn btn-primary" onclick="openScheduleModal(null,'${today}')">+ Add for Today</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Driver</th><th>Nurses &amp; Trips</th><th>Notes</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ─── All Schedules panel ──────────────────────────────────────────────────────
+function renderAllSchedules() {
+  const panel    = document.getElementById('panel-all-schedules');
+  const filtered = scheduleDateFilter
+    ? allSchedules.filter(s => s.date === scheduleDateFilter)
+    : allSchedules;
+
+  const tableRows = filtered.map(s => {
+    const trips = s.trips || [];
+    const nursesHtml = trips.length === 0
+      ? `<span class="badge badge-unassigned">No nurses</span>`
+      : trips.map(t => `
+          <div class="trip-summary">
+            <span class="badge badge-nurse">${esc(t.nurse_name || 'Unassigned')}</span>
+            <span class="trip-time">${esc(fmtTime(t.pickup_time))}</span>
+            <span class="trip-route">${esc(t.pickup_location)} → ${esc(t.drop_location)}</span>
+          </div>`).join('');
+    return `
+    <tr>
+      <td><strong>${esc(fmtDate(s.date))}</strong></td>
+      <td>${s.driver_name
+        ? `<div>${esc(s.driver_name)}</div><div class="td-sub">${esc(s.driver_phone || 'No phone')}</div>`
+        : `<span class="badge badge-unassigned">Unassigned</span>`}</td>
+      <td>${nursesHtml}</td>
+      <td style="color:#64748b;font-style:italic">${esc(s.notes || '—')}</td>
+      <td>
+        <div class="btn-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openScheduleModal(${s.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSchedule(${s.id})">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
   panel.innerHTML = `<div class="card">
-    <div class="card-header"><h2>All Schedules</h2>
+    <div class="card-header">
+      <h2>📅 All Schedules</h2>
       <div style="display:flex;gap:10px;align-items:center">
-        <input type="date" id="sched-date-filter" value="${esc(scheduleDateFilter)}" style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px" />
+        <input type="date" id="sched-date-filter" value="${esc(scheduleDateFilter)}"
+          style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px" />
         ${scheduleDateFilter ? `<button class="btn btn-ghost btn-sm" onclick="clearDateFilter()">✕ Clear</button>` : ''}
         <button class="btn btn-primary" onclick="openScheduleModal()">+ Add Schedule</button>
       </div>
@@ -156,14 +239,15 @@ function renderSchedules() {
         <thead><tr>
           <th>Date</th><th>Driver</th><th>Nurses &amp; Trips</th><th>Notes</th><th>Actions</th>
         </tr></thead>
-        <tbody>${rows.length ? rows : '<tr><td colspan="5"><div class="empty-state" style="padding:24px"><p>No schedules for this date.</p></div></td></tr>'}</tbody>
+        <tbody>${tableRows.length ? tableRows
+          : '<tr><td colspan="5"><div class="empty-state" style="padding:20px"><p>No schedules found.</p></div></td></tr>'}</tbody>
       </table>
     </div>
   </div>`;
 
   document.getElementById('sched-date-filter')?.addEventListener('change', e => {
     scheduleDateFilter = e.target.value;
-    renderSchedules();
+    renderAllSchedules();
   });
 }
 
@@ -311,7 +395,7 @@ function openUserModal(id, defaultRole) {
 }
 
 // ─── Schedule Modal ───────────────────────────────────────────────────────────
-function openScheduleModal(id) {
+function openScheduleModal(id, defaultDate = '') {
   const s       = id ? allSchedules.find(x => x.id === id) : null;
   const drivers = allUsers.filter(u => u.role === 'driver');
   const nurses  = allUsers.filter(u => u.role === 'nurse');
@@ -325,7 +409,7 @@ function openScheduleModal(id) {
       <div class="form-row">
         <div class="form-group">
           <label>Date *</label>
-          <input id="f-date" type="date" value="${esc(s?.date||'')}" required />
+          <input id="f-date" type="date" value="${esc(s?.date || defaultDate)}" required />
         </div>
         <div class="form-group">
           <label>Driver</label>
@@ -437,7 +521,45 @@ async function deleteSchedule(id) {
 }
 function clearDateFilter() {
   scheduleDateFilter = '';
-  renderSchedules();
+  renderAllSchedules();
+}
+
+// ─── Late Reports panel ───────────────────────────────────────────────────────
+function renderLateReports() {
+  const panel = document.getElementById('panel-reports');
+
+  if (lateReports.length === 0) {
+    panel.innerHTML = `<div class="card">
+      <div class="card-header"><h2>⚠️ Late Reports</h2></div>
+      <div class="empty-state"><div class="icon">✅</div><p>No late reports yet. Great!</p></div>
+    </div>`;
+    return;
+  }
+
+  const rows = lateReports.map(r => `
+    <tr>
+      <td><strong>${esc(fmtDate(r.schedule_date))}</strong></td>
+      <td>
+        <span class="badge badge-nurse">${esc(r.nurse_name)}</span>
+      </td>
+      <td>${esc(r.driver_name)}</td>
+      <td style="color:#64748b;font-size:12px">${esc(r.reported_at)}</td>
+    </tr>`).join('');
+
+  panel.innerHTML = `<div class="card">
+    <div class="card-header">
+      <h2>⚠️ Late Reports</h2>
+      <span class="badge" style="background:#fef3c7;color:#92400e;font-size:13px">${lateReports.length} total</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Nurse (Late)</th><th>Reported By Driver</th><th>Reported At</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
@@ -488,9 +610,12 @@ function renderCalendar() {
     const isPast = calSelected < today;
     if (list.length === 0) {
       detailHtml = `
-        <div class="empty-state" style="padding:28px 20px">
-          <div class="icon">📭</div>
-          <p>No schedule on ${esc(fmtDate(calSelected))}</p>
+        <div class="card" style="margin-top:16px;text-align:center;padding:28px">
+          <div style="font-size:36px;margin-bottom:10px">📭</div>
+          <p style="color:#64748b;margin-bottom:16px">No schedules on ${esc(fmtDate(calSelected))}</p>
+          <button class="btn btn-primary" onclick="openScheduleModal(null,'${calSelected}')">
+            + Add Schedule for this date
+          </button>
         </div>`;
     } else {
       const schedRows = list.map(s => {
@@ -521,8 +646,13 @@ function renderCalendar() {
 
       detailHtml = `
         <div class="card">
-          <div class="section-header ${isPast ? 'gray' : 'green'}" style="margin:0 0 12px;font-size:15px">
-            ${esc(fmtDate(calSelected))} — ${list.length} schedule${list.length!==1?'s':''}
+          <div class="card-header" style="margin-bottom:14px">
+            <h2 class="${isPast ? 'gray' : 'green'}" style="font-size:15px">
+              ${esc(fmtDate(calSelected))} — ${list.length} schedule${list.length!==1?'s':''}
+            </h2>
+            <button class="btn btn-primary btn-sm" onclick="openScheduleModal(null,'${calSelected}')">
+              + Add for this date
+            </button>
           </div>
           ${schedRows}
         </div>`;
