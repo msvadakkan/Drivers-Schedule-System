@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide — Driver Schedule System</title>
+  <style>
+    :root {
+      --primary: #b5006c;
+      --primary-dark: #880050;
+      --primary-light: #fce4ec;
+      --text: #1a1225;
+      --text-sub: #64748b;
+      --border: #eadde4;
+      --bg: #f7f3f5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+      background: #fff;
+    }
+
+    /* ── Print button (screen only) ── */
+    .print-bar {
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .print-bar span { font-weight: 700; font-size: 15px; }
+    .print-btn {
+      background: #fff;
+      color: var(--primary);
+      border: none;
+      padding: 8px 22px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* ── Layout ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 40px 32px 80px; }
+
+    /* ── Cover ── */
+    .cover {
+      text-align: center;
+      padding: 60px 20px 48px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 40px;
+    }
+    .cover img { height: 70px; width: auto; margin-bottom: 20px; }
+    .cover h1 { font-size: 30px; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+    .cover .subtitle { font-size: 15px; color: var(--text-sub); margin-bottom: 24px; }
+    .cover .meta {
+      display: inline-flex; gap: 32px;
+      background: var(--primary-light);
+      border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 13px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--bg);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 10px 10px 0;
+      padding: 20px 24px;
+      margin-bottom: 40px;
+    }
+    .toc h2 { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 4px; }
+    .toc a { color: var(--primary); text-decoration: none; font-size: 13px; }
+    .toc a:hover { text-decoration: underline; }
+    .toc .sub { padding-left: 16px; list-style: disc; }
+    .toc .sub li { margin-bottom: 2px; }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 48px; }
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary-light);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-num {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: var(--text); margin: 20px 0 8px; }
+    h4 { font-size: 13px; font-weight: 700; color: var(--primary); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .4px; }
+    p  { margin-bottom: 10px; color: var(--text); }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; list-style: none; padding: 0; margin: 12px 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .steps li:last-child { border-bottom: none; }
+    .steps li::before {
+      content: counter(step);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 800; font-size: 12px;
+      border-radius: 50%;
+      width: 24px; height: 24px;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* ── Info / tip boxes ── */
+    .tip {
+      background: #f0fdf4;
+      border-left: 4px solid #059669;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #065f46;
+      margin: 12px 0;
+    }
+    .note {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--primary-dark);
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #92400e;
+      margin: 12px 0;
+    }
+
+    /* ── Role badges ── */
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 99px; font-size: 11px; font-weight: 700;
+    }
+    .badge-admin  { background: #fef3c7; color: #92400e; }
+    .badge-driver { background: #e0f2fe; color: #0369a1; }
+    .badge-nurse  { background: var(--primary-light); color: var(--primary); }
+
+    /* ── Feature table ── */
+    .feat-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    .feat-table th {
+      background: var(--primary);
+      color: #fff; text-align: left;
+      padding: 10px 14px; font-weight: 700;
+    }
+    .feat-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .feat-table tr:last-child td { border-bottom: none; }
+    .feat-table tr:nth-child(even) td { background: var(--bg); }
+    .check { color: #059669; font-weight: 700; }
+    .cross { color: #dc2626; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* ── Footer ── */
+    .guide-footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--text-sub);
+      border-top: 2px solid var(--primary-light);
+      margin-top: 40px;
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      .print-bar { display: none; }
+      .page { padding: 20px; }
+      .section { page-break-inside: avoid; }
+      .cover { page-break-after: always; }
+      a { color: inherit; text-decoration: none; }
+      .toc { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Print bar (screen only) -->
+  <div class="print-bar">
+    <span>📄 Driver Schedule System — User Guide</span>
+    <button class="print-btn" onclick="window.print()">🖨️ Save as PDF</button>
+  </div>
+
+  <div class="page">
+
+    <!-- ── Cover ── -->
+    <div class="cover">
+      <img src="https://magenta-homehealth.com/wp-content/uploads/2025/12/Logo-MHH-e1765135439415.png"
+           alt="Magenta Home Health" />
+      <h1>Driver Schedule System</h1>
+      <p class="subtitle">Complete User Guide — Admin, Driver &amp; Nurse</p>
+      <div class="meta">
+        <span>📅 Version 1.0</span>
+        <span>🏢 Magenta Home Health</span>
+        <span>👨‍💻 Developed by msvadakkan</span>
+      </div>
+    </div>
+
+    <!-- ── Table of Contents ── -->
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol>
+        <li><a href="#overview">System Overview</a></li>
+        <li><a href="#roles">User Roles</a></li>
+        <li><a href="#setup">First-Time Setup</a></li>
+        <li><a href="#login">Logging In</a></li>
+        <li>
+          <a href="#admin">Admin Guide</a>
+          <ul class="sub">
+            <li><a href="#admin-dashboard">Dashboard &amp; Stats</a></li>
+            <li><a href="#admin-schedules">Managing Schedules</a></li>
+            <li><a href="#admin-calendar">Calendar View</a></li>
+            <li><a href="#admin-drivers">Managing Drivers</a></li>
+            <li><a href="#admin-nurses">Managing Nurses</a></li>
+            <li><a href="#admin-import">CSV Bulk Import</a></li>
+            <li><a href="#admin-late">Late Reports</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#driver">Driver Guide</a>
+          <ul class="sub">
+            <li><a href="#driver-today">Today's Schedule</a></li>
+            <li><a href="#driver-late">Reporting a Late Nurse</a></li>
+            <li><a href="#driver-whatsapp">WhatsApp Contact</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#nurse">Nurse Guide</a>
+          <ul class="sub">
+            <li><a href="#nurse-today">Today's Schedule</a></li>
+            <li><a href="#nurse-whatsapp">WhatsApp Contact</a></li>
+          </ul>
+        </li>
+        <li><a href="#tips">Tips &amp; FAQ</a></li>
+      </ol>
+    </div>
+
+    <!-- ── 1. Overview ── -->
+    <div class="section" id="overview">
+      <div class="section-title"><span class="section-num">1</span> System Overview</div>
+      <p>The <strong>Driver Schedule System</strong> is a web-based scheduling platform built for <strong>Magenta Home Health</strong>. It allows the admin team to plan and publish daily driver-nurse transport schedules, while drivers and nurses can log in to view their own schedules, contact each other via WhatsApp, and report late arrivals.</p>
+      <p>The system runs entirely in a web browser — no app installation is required.</p>
+
+      <h3>Key Features</h3>
+      <table class="feat-table">
+        <thead>
+          <tr><th>Feature</th><th>Admin</th><th>Driver</th><th>Nurse</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>View today's schedule</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>Calendar view</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>All schedules history</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>Create / Edit schedules</td><td class="check">✔</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+          <tr><td>Manage drivers &amp; nurses</td><td class="check">✔</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+          <tr><td>Bulk CSV import</td><td class="check">✔</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+          <tr><td>Report nurse late arrival</td><td class="cross">✗</td><td class="check">✔</td><td class="cross">✗</td></tr>
+          <tr><td>WhatsApp nurse contact</td><td class="cross">✗</td><td class="check">✔</td><td class="cross">✗</td></tr>
+          <tr><td>WhatsApp driver contact</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✔</td></tr>
+          <tr><td>View late reports</td><td class="check">✔</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 2. Roles ── -->
+    <div class="section" id="roles">
+      <div class="section-title"><span class="section-num">2</span> User Roles</div>
+
+      <h4><span class="badge badge-admin">Admin</span></h4>
+      <p>Full access to create and manage schedules, add/edit/delete drivers and nurses, view all late reports, and import users via CSV. There is one admin account per system.</p>
+
+      <h4><span class="badge badge-driver">Driver</span></h4>
+      <p>Can view their own assigned schedules (today, calendar, all). Can report a nurse as late and send a WhatsApp message to any nurse on their schedule.</p>
+
+      <h4><span class="badge badge-nurse">Nurse</span></h4>
+      <p>Can view their own pickup schedule (today, calendar, all). Can send a WhatsApp message to their assigned driver to notify readiness.</p>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 3. Setup ── -->
+    <div class="section" id="setup">
+      <div class="section-title"><span class="section-num">3</span> First-Time Setup</div>
+      <p>When the system is accessed for the first time (before any admin account exists), it automatically redirects to the <strong>Setup page</strong>.</p>
+
+      <ol class="steps">
+        <li>Open the system URL in your browser. You will be taken to the Setup page automatically.</li>
+        <li>Enter your <strong>Full Name</strong>, <strong>Email Address</strong>, and a secure <strong>Password</strong> (minimum 8 characters).</li>
+        <li>Re-enter the password in the <strong>Confirm Password</strong> field.</li>
+        <li>Click <strong>Create Admin Account</strong>.</li>
+        <li>You will see a success message. Click <strong>Go to Login</strong> to proceed.</li>
+      </ol>
+
+      <div class="note">⚠️ This setup page only appears once. Once the admin account is created, the setup page is permanently disabled for security.</div>
+      <div class="warn">🔒 Choose a strong password. There is no self-service password reset — only the admin can change passwords for other users.</div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 4. Login ── -->
+    <div class="section" id="login">
+      <div class="section-title"><span class="section-num">4</span> Logging In</div>
+
+      <ol class="steps">
+        <li>Open the system URL. Click <strong>Go to Login</strong> on the home page.</li>
+        <li>Enter your <strong>Email Address</strong> and <strong>Password</strong>.</li>
+        <li>Click <strong>Sign In</strong>.</li>
+        <li>You will be redirected to your dashboard based on your role:<br>
+          Admins → Admin dashboard &nbsp;|&nbsp; Drivers &amp; Nurses → My Schedule dashboard.</li>
+      </ol>
+
+      <div class="tip">✅ Your session stays active for 8 hours. You will be taken back to the login page automatically when it expires.</div>
+
+      <h3>Logging Out</h3>
+      <p>Click the <strong>Logout</strong> button in the top-right corner of any page.</p>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 5. Admin Guide ── -->
+    <div class="section" id="admin">
+      <div class="section-title"><span class="section-num">5</span> Admin Guide</div>
+
+      <div id="admin-dashboard">
+        <h3>5.1 Dashboard &amp; Stats</h3>
+        <p>The admin dashboard opens on the <strong>Today</strong> tab and shows five summary cards at the top:</p>
+        <ul style="padding-left:20px;margin-bottom:10px">
+          <li><strong>Drivers</strong> — total number of driver accounts</li>
+          <li><strong>Nurses</strong> — total number of nurse accounts</li>
+          <li><strong>Total Schedules</strong> — all schedules ever created</li>
+          <li><strong>Upcoming</strong> — schedules from today onwards</li>
+          <li><strong>Late Reports</strong> (red) — late reports filed today; click to jump to the Late Reports tab</li>
+        </ul>
+      </div>
+
+      <div id="admin-schedules">
+        <h3>5.2 Managing Schedules</h3>
+
+        <h4>Creating a New Schedule</h4>
+        <ol class="steps">
+          <li>Go to the <strong>All Schedules</strong> tab and click <strong>+ Add Schedule</strong>, or go to the <strong>Today</strong> tab and click <strong>+ Add for Today</strong>.</li>
+          <li>Select the <strong>Date</strong> and assign a <strong>Driver</strong> from the dropdown.</li>
+          <li>Click <strong>+ Add Nurse</strong> to add a nurse trip. Fill in:
+            <ul style="padding-left:16px;margin-top:6px">
+              <li><strong>Nurse</strong> — select from dropdown</li>
+              <li><strong>Pickup Time</strong> — time to pick up this nurse</li>
+              <li><strong>Pickup Location</strong> — address where nurse will be picked up</li>
+              <li><strong>Drop Location</strong> — destination (e.g. hospital name)</li>
+            </ul>
+          </li>
+          <li>Repeat <em>+ Add Nurse</em> for each nurse on this schedule. Use the <strong>× Remove</strong> button to delete a nurse row.</li>
+          <li>Add optional <strong>Notes</strong> for the driver.</li>
+          <li>Click <strong>Save Schedule</strong>.</li>
+        </ol>
+
+        <h4>Editing a Schedule</h4>
+        <p>Click the <strong>Edit</strong> button on any schedule row. The same form opens with existing data pre-filled. Make changes and click <strong>Save Schedule</strong>.</p>
+
+        <h4>Deleting a Schedule</h4>
+        <p>Click the <strong>Delete</strong> button on the schedule row and confirm the prompt.</p>
+
+        <div class="note">📌 You can assign multiple nurses to a single driver on the same date — each nurse gets their own pickup time and locations.</div>
+      </div>
+
+      <div id="admin-calendar">
+        <h3>5.3 Calendar View</h3>
+        <p>Click the <strong>📆 Calendar</strong> tab. The current month is displayed with coloured indicators:</p>
+        <ul style="padding-left:20px;margin-bottom:10px">
+          <li><strong>Green dot</strong> — upcoming scheduled date</li>
+          <li><strong>Grey dot</strong> — past scheduled date</li>
+          <li><strong>Blue border</strong> — today's date</li>
+        </ul>
+        <p>Click any date to see the schedules for that day below the calendar. Click <strong>+ Add Schedule for this date</strong> to create one directly from the calendar.</p>
+        <p>Use the <strong>← Prev</strong> and <strong>Next →</strong> buttons to navigate months.</p>
+      </div>
+
+      <div id="admin-drivers">
+        <h3>5.4 Managing Drivers</h3>
+        <ol class="steps">
+          <li>Go to the <strong>🚗 Drivers</strong> tab.</li>
+          <li>Click <strong>+ Add Driver</strong> to create a new driver account. Fill in Name, Email, Phone, and Password.</li>
+          <li>Click <strong>Edit</strong> on any row to update their details. Leave the password field blank to keep the existing password.</li>
+          <li>Click <strong>Delete</strong> to remove a driver. Their past schedules remain but will show as <em>Unassigned</em>.</li>
+        </ol>
+        <p>The 💬 WhatsApp icon next to a driver's phone opens a direct WhatsApp chat.</p>
+      </div>
+
+      <div id="admin-nurses">
+        <h3>5.5 Managing Nurses</h3>
+        <p>Works identically to the Drivers tab. Go to the <strong>👩‍⚕️ Nurses</strong> tab to add, edit, or delete nurse accounts.</p>
+      </div>
+
+      <div id="admin-import">
+        <h3>5.6 CSV Bulk Import</h3>
+        <p>To add many drivers or nurses at once:</p>
+        <ol class="steps">
+          <li>Go to the <strong>Drivers</strong> or <strong>Nurses</strong> tab and click <strong>⬆ Import CSV</strong>.</li>
+          <li>Click <strong>⬇ Download Sample CSV</strong> to get the correct template.</li>
+          <li>Fill in the CSV with columns: <code>name, email, password, phone</code> (phone is optional).</li>
+          <li>Click <strong>Select CSV File</strong> and choose your file. A preview table will appear.</li>
+          <li>Click <strong>Import</strong>. A summary shows how many were imported and how many were skipped (duplicate emails are skipped automatically).</li>
+        </ol>
+        <div class="tip">✅ You can import the same CSV again safely — duplicate emails are detected and skipped.</div>
+      </div>
+
+      <div id="admin-late">
+        <h3>5.7 Late Reports</h3>
+        <p>Go to the <strong>⚠️ Late Reports</strong> tab to see all late arrival reports filed by drivers. Each report shows:</p>
+        <ul style="padding-left:20px;margin-bottom:10px">
+          <li>The date of the schedule</li>
+          <li>The nurse who was late</li>
+          <li>The driver who filed the report</li>
+          <li>The exact time the report was submitted</li>
+        </ul>
+        <p>The <strong>Late Reports</strong> stat card on the dashboard shows how many reports were filed today.</p>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 6. Driver Guide ── -->
+    <div class="section" id="driver">
+      <div class="section-title"><span class="section-num">6</span> Driver Guide</div>
+
+      <p>After logging in, drivers are taken to the <strong>My Schedule</strong> dashboard. Your profile (name, email, phone) is shown at the top.</p>
+
+      <div id="driver-today">
+        <h3>6.1 Today's Schedule</h3>
+        <p>The <strong>☀️ Today</strong> tab shows all your nurse trips for today. Each trip card displays:</p>
+        <ul style="padding-left:20px;margin-bottom:10px">
+          <li>Nurse name and phone number</li>
+          <li>Pickup time</li>
+          <li>Pickup location → Drop location</li>
+          <li>WhatsApp button to message the nurse</li>
+          <li>⏰ Report Late button</li>
+        </ul>
+      </div>
+
+      <div id="driver-late">
+        <h3>6.2 Reporting a Late Nurse</h3>
+        <ol class="steps">
+          <li>Find the nurse's trip card in your <strong>Today</strong> tab.</li>
+          <li>Click the <strong>⏰ Report Late</strong> button on their card.</li>
+          <li>Confirm the prompt. The button changes to <em>"⏰ Late Reported"</em>.</li>
+        </ol>
+        <div class="note">📌 You can only report a nurse as late once per schedule. The report is visible to the admin immediately.</div>
+      </div>
+
+      <div id="driver-whatsapp">
+        <h3>6.3 WhatsApp Contact</h3>
+        <ol class="steps">
+          <li>On any nurse trip card, click the <strong>💬 WhatsApp</strong> button.</li>
+          <li>WhatsApp opens (web or app) with a pre-filled message: <em>"Hi [Nurse Name], I've arrived at the pickup location."</em></li>
+          <li>Review and send the message.</li>
+        </ol>
+        <div class="tip">✅ Nurse phone numbers must be entered in the system by the admin for the WhatsApp button to appear.</div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 7. Nurse Guide ── -->
+    <div class="section" id="nurse">
+      <div class="section-title"><span class="section-num">7</span> Nurse Guide</div>
+
+      <p>After logging in, nurses are taken to the <strong>My Schedule</strong> dashboard showing their assigned trips.</p>
+
+      <div id="nurse-today">
+        <h3>7.1 Today's Schedule</h3>
+        <p>The <strong>☀️ Today</strong> tab shows your trip for today. Each card displays:</p>
+        <ul style="padding-left:20px;margin-bottom:10px">
+          <li>Date and pickup time (shown large)</li>
+          <li>Pickup location and drop location</li>
+          <li>Your assigned driver's name and phone</li>
+          <li>WhatsApp button to contact the driver</li>
+        </ul>
+        <p>Use the <strong>📅 Calendar</strong> and <strong>📋 All Schedules</strong> tabs to view upcoming and past trips.</p>
+      </div>
+
+      <div id="nurse-whatsapp">
+        <h3>7.2 WhatsApp Contact</h3>
+        <ol class="steps">
+          <li>On your schedule card, click <strong>💬 WhatsApp Driver</strong>.</li>
+          <li>WhatsApp opens with a pre-filled message: <em>"Hi [Driver Name], I'm ready for pickup."</em></li>
+          <li>Review and send the message.</li>
+        </ol>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- ── 8. Tips ── -->
+    <div class="section" id="tips">
+      <div class="section-title"><span class="section-num">8</span> Tips &amp; FAQ</div>
+
+      <h3>Why can't I see any schedule today?</h3>
+      <p>The admin may not have created a schedule for today yet. Contact your admin to add one.</p>
+
+      <h3>The WhatsApp button is not showing</h3>
+      <p>The phone number for that driver or nurse has not been added in the system. Ask the admin to update the profile with a phone number.</p>
+
+      <h3>I forgot my password</h3>
+      <p>Contact your admin. The admin can update your password from the Drivers or Nurses management tab.</p>
+
+      <h3>How do I view past schedules?</h3>
+      <p>Go to the <strong>📋 All Schedules</strong> tab or use the <strong>📅 Calendar</strong> to navigate to previous months.</p>
+
+      <h3>Phone number format</h3>
+      <p>Enter Australian phone numbers starting with <code>04</code> (e.g. <code>0412 345 678</code>). The system converts them automatically to international format for WhatsApp.</p>
+
+      <h3>Session expired — why was I logged out?</h3>
+      <p>Sessions last 8 hours. If you were inactive for a long period, you will be redirected to the login page. Simply log in again.</p>
+
+      <h3>Can multiple nurses be assigned to one driver?</h3>
+      <p>Yes. When creating a schedule, use <strong>+ Add Nurse</strong> to add as many nurse trips as needed under one driver.</p>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="guide-footer">
+      <strong style="color:var(--primary)">Magenta Home Health</strong> — Driver Schedule System &nbsp;|&nbsp;
+      Developed by <strong>msvadakkan</strong> &nbsp;|&nbsp; Version 1.0
+    </div>
+
+  </div><!-- /page -->
+</body>
+</html>
