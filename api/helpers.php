@@ -1,4 +1,8 @@
 <?php
+// Keep session alive for 8 hours
+$lifetime = 8 * 60 * 60;
+ini_set('session.gc_maxlifetime', $lifetime);
+session_set_cookie_params($lifetime);
 session_start();
 header('Content-Type: application/json');
 
