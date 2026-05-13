@@ -2,6 +2,7 @@
 const today       = new Date().toISOString().slice(0, 10);
 let currentUser   = null;
 let userSchedules = [];
+let lateReports   = [];
 let currentTab    = 'today';
 let calYear       = new Date().getFullYear();
 let calMonth      = new Date().getMonth(); // 0-indexed
@@ -22,6 +23,13 @@ function fmtTime(t) {
 }
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function waUrl(phone, text = '') {
+  if (!phone) return '';
+  let num = phone.replace(/\D/g, '');
+  if (num.startsWith('0')) num = '61' + num.slice(1);
+  const url = `https://wa.me/${num}`;
+  return text ? `${url}?text=${encodeURIComponent(text)}` : url;
 }
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -58,6 +66,14 @@ function esc(s) {
     return;
   }
 
+  // Fetch late reports (drivers only)
+  if (currentUser.role === 'driver') {
+    try {
+      const r3 = await fetch('api/late-report.php');
+      if (r3.ok) lateReports = await r3.json();
+    } catch {}
+  }
+
   // Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -89,17 +105,31 @@ function driverCardHtml(s, isPast) {
   const trips = s.trips || [];
   const tripsHtml = trips.length === 0
     ? `<div style="color:#94a3b8;font-size:13px">No nurses assigned</div>`
-    : trips.map(t => `
+    : trips.map(t => {
+        const isLate = lateReports.some(r => r.schedule_id == s.id && r.nurse_id == t.nurse_id);
+        const waNurse = t.nurse_phone ? waUrl(t.nurse_phone, `Hi ${t.nurse_name}, I've arrived at the pickup location.`) : '';
+        return `
         <div class="trip-card">
-          <div class="trip-nurse-name">${t.nurse_name ? esc(t.nurse_name) : '<span style="color:#94a3b8">Unassigned</span>'}</div>
-          ${t.nurse_phone ? `<div class="trip-nurse-phone">📞 ${esc(t.nurse_phone)}</div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:start">
+            <div>
+              <div class="trip-nurse-name">${t.nurse_name ? esc(t.nurse_name) : '<span style="color:#94a3b8">Unassigned</span>'}</div>
+              ${t.nurse_phone ? `<div class="trip-nurse-phone">📞 ${esc(t.nurse_phone)}</div>` : ''}
+            </div>
+            ${waNurse ? `<a href="${waNurse}" target="_blank" title="WhatsApp nurse" style="text-decoration:none;font-size:20px">💬</a>` : ''}
+          </div>
           <div class="trip-route">
             <span>⏰ ${esc(fmtTime(t.pickup_time))}</span>
             <span>📍 ${esc(t.pickup_location)}</span>
             <span>→</span>
             <span>🏥 ${esc(t.drop_location)}</span>
           </div>
-        </div>`).join('');
+          ${currentUser.role === 'driver' && t.nurse_id && !isPast ? `
+            <div style="margin-top:8px">
+              ${isLate
+                ? `<span class="badge" style="background:#fef3c7;color:#92400e">⏰ Late Reported</span>`
+                : `<button class="btn btn-danger btn-sm" onclick="reportLate(${s.id},${t.nurse_id})">⏰ Report Late</button>`}
+            </div>` : ''}
+        </div>`; }).join('');
 
   return `
     <div class="sched-card ${isPast ? 'past' : 'upcoming'}">
@@ -115,6 +145,7 @@ function driverCardHtml(s, isPast) {
 
 // Nurse sees only her own trip + driver contact
 function nurseCardHtml(s, isPast) {
+  const waDriver = s.driver_phone ? waUrl(s.driver_phone, `Hi ${s.driver_name}, I'm ready for pickup.`) : '';
   return `
     <div class="sched-card ${isPast ? 'past' : 'upcoming'}">
       <div class="sched-date">${esc(fmtDate(s.date))}</div>
@@ -127,7 +158,8 @@ function nurseCardHtml(s, isPast) {
         <div class="contact-label">Driver</div>
         ${s.driver_name
           ? `<div class="contact-name">${esc(s.driver_name)}</div>
-             <div class="contact-phone">📞 ${esc(s.driver_phone || 'No phone on file')}</div>`
+             <div class="contact-phone">📞 ${esc(s.driver_phone || 'No phone on file')}</div>
+             ${waDriver ? `<div style="margin-top:6px"><a href="${waDriver}" target="_blank" class="btn btn-ghost btn-sm">💬 WhatsApp Driver</a></div>` : ''}`
           : `<div style="color:#94a3b8;font-size:13px">Not assigned</div>`}
       </div>
       ${s.notes ? `<div class="sched-notes">📝 ${esc(s.notes)}</div>` : ''}
@@ -275,4 +307,22 @@ function calMove(dir) {
   if (calMonth > 11) { calMonth = 0;  calYear++; }
   if (calMonth < 0)  { calMonth = 11; calYear--; }
   renderTab('calendar');
+}
+
+// ─── Late Report ──────────────────────────────────────────────────────────────
+async function reportLate(scheduleId, nurseId) {
+  if (!confirm('Report this nurse as late?')) return;
+  try {
+    const res = await fetch('api/late-report.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule_id: scheduleId, nurse_id: nurseId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to report');
+    lateReports.push({ schedule_id: scheduleId, nurse_id: nurseId });
+    renderTab(currentTab);
+  } catch (ex) {
+    alert(ex.message);
+  }
 }

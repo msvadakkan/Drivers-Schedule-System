@@ -292,3 +292,11 @@ tr:hover td { background: #f8fafc; }
   .main-content { margin: 14px auto; }
   .login-card { padding: 28px 20px; }
 }
+
+.btn-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px;
+  text-decoration: none; font-size: 18px;
+  transition: background .12s;
+}
+.btn-icon:hover { background: #f1f5f9; }

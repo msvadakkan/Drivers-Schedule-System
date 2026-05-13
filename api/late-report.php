@@ -11,10 +11,16 @@ $session = requireAuth();
 switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'GET':
-        requireAdmin();
         $rows = readLate();
-        usort($rows, fn($a,$b) => strcmp($b['reported_at'], $a['reported_at']));
-        echo json_encode(array_values($rows));
+        if ($session['role'] === 'admin') {
+            usort($rows, fn($a,$b) => strcmp($b['reported_at'], $a['reported_at']));
+            echo json_encode(array_values($rows));
+        } elseif ($session['role'] === 'driver') {
+            $rows = array_values(array_filter($rows, fn($r) => $r['driver_id'] == $session['id']));
+            echo json_encode($rows);
+        } else {
+            http_response_code(403); echo json_encode(['error' => 'Forbidden']); exit;
+        }
         break;
 
     case 'POST':
