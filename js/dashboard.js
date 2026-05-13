@@ -5,7 +5,7 @@ let userSchedules = [];
 let lateReports   = [];
 let currentTab    = 'today';
 let calYear       = new Date().getFullYear();
-let calMonth      = new Date().getMonth(); // 0-indexed
+let calMonth      = new Date().getMonth();
 let calSelected   = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
