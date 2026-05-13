@@ -48,16 +48,6 @@ function getUserById($id) {
 function nextId($items) {
     return empty($items) ? 1 : max(array_column($items, 'id')) + 1;
 }
-function enrichSchedule($s, $userMap) {
-    $d = ($s['driver_id'] && isset($userMap[$s['driver_id']])) ? $userMap[$s['driver_id']] : null;
-    $n = ($s['nurse_id']  && isset($userMap[$s['nurse_id']]))  ? $userMap[$s['nurse_id']]  : null;
-    return array_merge($s, [
-        'driver_name'  => $d ? $d['name']  : null,
-        'driver_phone' => $d ? $d['phone'] : null,
-        'nurse_name'   => $n ? $n['name']  : null,
-        'nurse_phone'  => $n ? $n['phone'] : null,
-    ]);
-}
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function requireAuth() {

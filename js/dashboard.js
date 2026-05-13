@@ -80,23 +80,54 @@ function renderTab(tab) {
 
 // ─── Schedule card ────────────────────────────────────────────────────────────
 function cardHtml(s, isPast) {
-  const isDriver     = currentUser.role === 'driver';
-  const partnerLabel = isDriver ? 'Nurse' : 'Driver';
-  const pName        = isDriver ? s.nurse_name  : s.driver_name;
-  const pPhone       = isDriver ? s.nurse_phone : s.driver_phone;
+  if (currentUser.role === 'nurse') return nurseCardHtml(s, isPast);
+  return driverCardHtml(s, isPast);
+}
+
+// Driver sees all nurse trips for this schedule
+function driverCardHtml(s, isPast) {
+  const trips = s.trips || [];
+  const tripsHtml = trips.length === 0
+    ? `<div style="color:#94a3b8;font-size:13px">No nurses assigned</div>`
+    : trips.map(t => `
+        <div class="trip-card">
+          <div class="trip-nurse-name">${t.nurse_name ? esc(t.nurse_name) : '<span style="color:#94a3b8">Unassigned</span>'}</div>
+          ${t.nurse_phone ? `<div class="trip-nurse-phone">📞 ${esc(t.nurse_phone)}</div>` : ''}
+          <div class="trip-route">
+            <span>⏰ ${esc(fmtTime(t.pickup_time))}</span>
+            <span>📍 ${esc(t.pickup_location)}</span>
+            <span>→</span>
+            <span>🏥 ${esc(t.drop_location)}</span>
+          </div>
+        </div>`).join('');
+
   return `
     <div class="sched-card ${isPast ? 'past' : 'upcoming'}">
       <div class="sched-date">${esc(fmtDate(s.date))}</div>
-      <div class="sched-time">${esc(fmtTime(s.shift_time))}</div>
+      <div style="font-size:13px;font-weight:600;color:#475569;margin-bottom:10px">
+        ${trips.length} nurse${trips.length !== 1 ? 's' : ''} assigned
+      </div>
+      <div class="contact-label" style="margin-bottom:8px">Nurses &amp; Trips</div>
+      <div class="trips-list">${tripsHtml}</div>
+      ${s.notes ? `<div class="sched-notes">📝 ${esc(s.notes)}</div>` : ''}
+    </div>`;
+}
+
+// Nurse sees only her own trip + driver contact
+function nurseCardHtml(s, isPast) {
+  return `
+    <div class="sched-card ${isPast ? 'past' : 'upcoming'}">
+      <div class="sched-date">${esc(fmtDate(s.date))}</div>
+      <div class="sched-time">${esc(fmtTime(s.pickup_time))}</div>
       <div class="sched-route">
         <div class="loc">📍 <span>${esc(s.pickup_location)}</span></div>
         <div class="loc">🏥 <span>${esc(s.drop_location)}</span></div>
       </div>
       <div class="sched-contact">
-        <div class="contact-label">${esc(partnerLabel)}</div>
-        ${pName
-          ? `<div class="contact-name">${esc(pName)}</div>
-             <div class="contact-phone">📞 ${esc(pPhone || 'No phone on file')}</div>`
+        <div class="contact-label">Driver</div>
+        ${s.driver_name
+          ? `<div class="contact-name">${esc(s.driver_name)}</div>
+             <div class="contact-phone">📞 ${esc(s.driver_phone || 'No phone on file')}</div>`
           : `<div style="color:#94a3b8;font-size:13px">Not assigned</div>`}
       </div>
       ${s.notes ? `<div class="sched-notes">📝 ${esc(s.notes)}</div>` : ''}
@@ -112,7 +143,7 @@ function renderToday(container) {
       <div class="empty-state">
         <div class="icon">☀️</div>
         <p style="font-size:16px;font-weight:600;color:#1e293b;margin-bottom:6px">No schedule today</p>
-        <p>${fmtDate(today)}</p>
+        <p>${esc(fmtDate(today))}</p>
       </div>`;
     return;
   }

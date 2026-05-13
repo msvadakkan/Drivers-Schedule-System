@@ -175,6 +175,41 @@ tr:hover td { background: #f8fafc; }
 .section-header.green { color: #059669; }
 .section-header.gray  { color: #94a3b8; }
 
+/* ── Nurse rows (schedule form) ── */
+.nurse-row {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #f8fafc;
+}
+.nurse-row-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; font-size: 13px; font-weight: 700; color: #475569;
+}
+
+/* ── Trip summary (admin table) ── */
+.trip-summary {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 6px; padding: 4px 0; font-size: 12px;
+}
+.trip-summary + .trip-summary { border-top: 1px solid #f1f5f9; margin-top: 4px; padding-top: 6px; }
+.trip-time  { color: #64748b; white-space: nowrap; }
+.trip-route { color: #475569; }
+
+/* ── Trips list (driver dashboard card) ── */
+.trips-list { display: flex; flex-direction: column; gap: 8px; }
+.trip-card {
+  background: #f8fafc; border-radius: 8px; padding: 10px 12px;
+  border-left: 3px solid #3b82f6;
+}
+.trip-nurse-name  { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.trip-nurse-phone { color: #2563eb; font-size: 12px; margin-bottom: 6px; }
+.trip-route {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: 12px; color: #475569;
+}
+
 /* ── Calendar ── */
 .cal-nav {
   display: flex; align-items: center; justify-content: space-between;

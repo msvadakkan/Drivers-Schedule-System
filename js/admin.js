@@ -98,18 +98,23 @@ function renderSchedules() {
     return;
   }
 
-  const rows = allSchedules.map(s => `
+  const rows = allSchedules.map(s => {
+    const trips = s.trips || [];
+    const nursesHtml = trips.length === 0
+      ? `<span class="badge badge-unassigned">No nurses</span>`
+      : trips.map(t => `
+          <div class="trip-summary">
+            <span class="badge badge-nurse">${esc(t.nurse_name || 'Unassigned')}</span>
+            <span class="trip-time">${esc(fmtTime(t.pickup_time))}</span>
+            <span class="trip-route">${esc(t.pickup_location)} → ${esc(t.drop_location)}</span>
+          </div>`).join('');
+    return `
     <tr>
       <td><strong>${esc(fmtDate(s.date))}</strong></td>
-      <td style="white-space:nowrap">${esc(fmtTime(s.shift_time))}</td>
       <td>${s.driver_name
         ? `<div>${esc(s.driver_name)}</div><div class="td-sub">${esc(s.driver_phone || 'No phone')}</div>`
         : `<span class="badge badge-unassigned">Unassigned</span>`}</td>
-      <td>${s.nurse_name
-        ? `<div>${esc(s.nurse_name)}</div><div class="td-sub">${esc(s.nurse_phone || 'No phone')}</div>`
-        : `<span class="badge badge-unassigned">Unassigned</span>`}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.pickup_location)}">${esc(s.pickup_location)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.drop_location)}">${esc(s.drop_location)}</td>
+      <td>${nursesHtml}</td>
       <td style="color:#64748b;font-style:italic">${esc(s.notes || '—')}</td>
       <td>
         <div class="btn-actions">
@@ -117,7 +122,8 @@ function renderSchedules() {
           <button class="btn btn-danger btn-sm" onclick="deleteSchedule(${s.id})">Delete</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   panel.innerHTML = `<div class="card">
     <div class="card-header"><h2>All Schedules</h2>
@@ -126,8 +132,7 @@ function renderSchedules() {
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Date</th><th>Time</th><th>Driver</th><th>Nurse</th>
-          <th>Pickup</th><th>Drop</th><th>Notes</th><th>Actions</th>
+          <th>Date</th><th>Driver</th><th>Nurses &amp; Trips</th><th>Notes</th><th>Actions</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -283,9 +288,8 @@ function openScheduleModal(id) {
   const nurses  = allUsers.filter(u => u.role === 'nurse');
 
   const driverOpts = [`<option value="">— Unassigned —</option>`,
-    ...drivers.map(d => `<option value="${d.id}" ${s?.driver_id==d.id?'selected':''}>${esc(d.name)}</option>`)].join('');
-  const nurseOpts  = [`<option value="">— Unassigned —</option>`,
-    ...nurses.map(n  => `<option value="${n.id}" ${s?.nurse_id==n.id?'selected':''}>${esc(n.name)}</option>`)].join('');
+    ...drivers.map(d => `<option value="${d.id}" ${s?.driver_id==d.id?'selected':''}>${esc(d.name)}</option>`)
+  ].join('');
 
   showModal(s ? 'Edit Schedule' : 'Add Schedule', `
     <form id="sched-form">
@@ -295,50 +299,43 @@ function openScheduleModal(id) {
           <input id="f-date" type="date" value="${esc(s?.date||'')}" required />
         </div>
         <div class="form-group">
-          <label>Shift Time *</label>
-          <input id="f-time" type="time" value="${esc(s?.shift_time||'')}" required />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
           <label>Driver</label>
           <select id="f-driver">${driverOpts}</select>
         </div>
-        <div class="form-group">
-          <label>Nurse</label>
-          <select id="f-nurse">${nurseOpts}</select>
-        </div>
       </div>
-      <div class="form-group">
-        <label>Pickup Location *</label>
-        <input id="f-pickup" value="${esc(s?.pickup_location||'')}" required placeholder="123 Main St, Suburb" />
+
+      <!-- Nurse trips -->
+      <div style="margin:18px 0 8px;font-weight:700;font-size:13px;color:#374151">
+        Nurses &amp; Trips
       </div>
-      <div class="form-group">
-        <label>Drop Location *</label>
-        <input id="f-drop" value="${esc(s?.drop_location||'')}" required placeholder="456 Hospital Ave" />
-      </div>
+      <div id="nurse-rows"></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-bottom:16px"
+        onclick="addNurseRow()">+ Add Nurse</button>
+
       <div class="form-group">
         <label>Notes</label>
         <textarea id="f-notes" placeholder="Any special instructions…">${esc(s?.notes||'')}</textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="modal-save-btn">Save</button>
+        <button type="submit" class="btn btn-primary" id="modal-save-btn">Save Schedule</button>
       </div>
     </form>`);
+
+  // Populate existing trips or start with one empty row
+  const existingTrips = s?.trips?.length ? s.trips : [{}];
+  existingTrips.forEach(t => addNurseRow(t, nurses));
 
   document.getElementById('sched-form').addEventListener('submit', async e => {
     e.preventDefault();
     setSaving(true);
     try {
+      const trips = collectNurseRows();
       const payload = {
-        date:             document.getElementById('f-date').value,
-        shift_time:       document.getElementById('f-time').value,
-        driver_id:        document.getElementById('f-driver').value || null,
-        nurse_id:         document.getElementById('f-nurse').value  || null,
-        pickup_location:  document.getElementById('f-pickup').value,
-        drop_location:    document.getElementById('f-drop').value,
-        notes:            document.getElementById('f-notes').value,
+        date:      document.getElementById('f-date').value,
+        driver_id: document.getElementById('f-driver').value || null,
+        notes:     document.getElementById('f-notes').value,
+        trips,
       };
       if (s) await api(`api/schedules.php?id=${id}`, 'PUT', payload);
       else   await api('api/schedules.php', 'POST', payload);
@@ -349,6 +346,53 @@ function openScheduleModal(id) {
       setSaving(false);
     }
   });
+}
+
+// Build one nurse-row inside the modal
+function addNurseRow(data = {}, nursesOverride) {
+  const nurses = nursesOverride || allUsers.filter(u => u.role === 'nurse');
+  const nurseOpts = [`<option value="">— Unassigned —</option>`,
+    ...nurses.map(n => `<option value="${n.id}" ${data.nurse_id==n.id?'selected':''}>${esc(n.name)}</option>`)
+  ].join('');
+
+  const div = document.createElement('div');
+  div.className = 'nurse-row';
+  div.innerHTML = `
+    <div class="nurse-row-header">
+      <span>🧑‍⚕️ Nurse</span>
+      <button type="button" class="btn btn-danger btn-sm"
+        onclick="this.closest('.nurse-row').remove()">× Remove</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nurse</label>
+        <select class="nr-nurse">${nurseOpts}</select>
+      </div>
+      <div class="form-group">
+        <label>Pickup Time *</label>
+        <input type="time" class="nr-pickup-time" value="${esc(data.pickup_time||'')}" required />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Pickup Location *</label>
+        <input class="nr-pickup-loc" value="${esc(data.pickup_location||'')}" required placeholder="123 Main St" />
+      </div>
+      <div class="form-group">
+        <label>Drop Location *</label>
+        <input class="nr-drop-loc" value="${esc(data.drop_location||'')}" required placeholder="Hospital Ave" />
+      </div>
+    </div>`;
+  document.getElementById('nurse-rows').appendChild(div);
+}
+
+function collectNurseRows() {
+  return Array.from(document.querySelectorAll('.nurse-row')).map(row => ({
+    nurse_id:        row.querySelector('.nr-nurse').value        || null,
+    pickup_time:     row.querySelector('.nr-pickup-time').value,
+    pickup_location: row.querySelector('.nr-pickup-loc').value,
+    drop_location:   row.querySelector('.nr-drop-loc').value,
+  }));
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
