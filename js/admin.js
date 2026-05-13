@@ -11,14 +11,32 @@ let scheduleDateFilter = '';
 
 // ─── API helper ──────────────────────────────────────────────────────────────
 async function api(url, method = 'GET', body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  if (res.status === 401) { location.href = 'login.html'; return null; }
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' }, signal: controller.signal };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    clearTimeout(timer);
+    if (res.status === 401 || res.status === 403) { location.href = 'login.html'; return null; }
+    let data;
+    try { data = await res.json(); } catch { throw new Error('Server returned an unexpected response.'); }
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  } catch (ex) {
+    clearTimeout(timer);
+    if (ex.name === 'AbortError') throw new Error('Request timed out — check your connection.');
+    throw ex;
+  }
 }
+
+// Keep session alive every 10 minutes
+setInterval(async () => {
+  try {
+    const r = await fetch('api/me.php');
+    if (r.status === 401 || r.status === 403) location.href = 'login.html';
+  } catch {}
+}, 10 * 60 * 1000);
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
 function fmtDate(d) {
@@ -58,17 +76,27 @@ function waUrl(phone, text = '') {
 })();
 
 async function loadAll() {
-  const [u, s, r] = await Promise.all([
-    api('api/users.php'),
-    api('api/schedules.php'),
-    api('api/late-report.php')
-  ]);
-  if (!u || !s) return;
-  allUsers     = u;
-  allSchedules = s;
-  lateReports  = r || [];
-  renderStats();
-  renderTab(currentTab);
+  try {
+    const [u, s, r] = await Promise.all([
+      api('api/users.php'),
+      api('api/schedules.php'),
+      api('api/late-report.php')
+    ]);
+    if (!u || !s) return;
+    allUsers     = u;
+    allSchedules = s;
+    lateReports  = r || [];
+    renderStats();
+    renderTab(currentTab);
+  } catch (ex) {
+    document.querySelector('.main-content').innerHTML = `
+      <div class="card" style="margin-top:40px;text-align:center;padding:40px">
+        <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+        <p style="font-size:16px;font-weight:600;color:#1e293b;margin-bottom:8px">Failed to load data</p>
+        <p style="color:#64748b;margin-bottom:20px">${esc(ex.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Reload Page</button>
+      </div>`;
+  }
 }
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────

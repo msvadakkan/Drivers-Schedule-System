@@ -32,10 +32,35 @@ function waUrl(phone, text = '') {
   return text ? `${url}?text=${encodeURIComponent(text)}` : url;
 }
 
+// ─── Fetch helper ────────────────────────────────────────────────────────────
+async function apiFetch(url, opts = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timer);
+    if (res.status === 401 || res.status === 403) { location.href = 'login.html'; return null; }
+    return res;
+  } catch (ex) {
+    clearTimeout(timer);
+    if (ex.name === 'AbortError') throw new Error('Request timed out — check your connection.');
+    throw ex;
+  }
+}
+
+// Keep session alive every 10 minutes
+setInterval(async () => {
+  try {
+    const r = await fetch('api/me.php');
+    if (r.status === 401 || r.status === 403) location.href = 'login.html';
+  } catch {}
+}, 10 * 60 * 1000);
+
 // ─── Boot ────────────────────────────────────────────────────────────────────
 (async () => {
   try {
-    const r = await fetch('api/me.php');
+    const r = await apiFetch('api/me.php');
+    if (!r) return;
     if (!r.ok) { location.href = 'login.html'; return; }
     currentUser = await r.json();
     if (currentUser.role === 'admin') { location.href = 'admin.html'; return; }
@@ -58,19 +83,22 @@ function waUrl(phone, text = '') {
 
   // Fetch schedules
   try {
-    const r2 = await fetch('api/schedules.php');
+    const r2 = await apiFetch('api/schedules.php');
+    if (!r2) return;
+    if (!r2.ok) throw new Error('Server error');
     userSchedules = await r2.json();
-  } catch {
+  } catch (ex) {
     document.getElementById('schedule-output').innerHTML =
-      '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load schedules.</p></div>';
+      `<div class="empty-state"><div class="icon">⚠️</div><p>${esc(ex.message || 'Failed to load schedules.')}</p>
+       <button class="btn btn-primary" style="margin-top:12px" onclick="location.reload()">Reload</button></div>`;
     return;
   }
 
   // Fetch late reports (drivers only)
   if (currentUser.role === 'driver') {
     try {
-      const r3 = await fetch('api/late-report.php');
-      if (r3.ok) lateReports = await r3.json();
+      const r3 = await apiFetch('api/late-report.php');
+      if (r3 && r3.ok) lateReports = await r3.json();
     } catch {}
   }
 
@@ -313,12 +341,14 @@ function calMove(dir) {
 async function reportLate(scheduleId, nurseId) {
   if (!confirm('Report this nurse as late?')) return;
   try {
-    const res = await fetch('api/late-report.php', {
+    const res = await apiFetch('api/late-report.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ schedule_id: scheduleId, nurse_id: nurseId })
     });
-    const data = await res.json();
+    if (!res) return;
+    let data;
+    try { data = await res.json(); } catch { throw new Error('Server returned an unexpected response.'); }
     if (!res.ok) throw new Error(data.error || 'Failed to report');
     lateReports.push({ schedule_id: scheduleId, nurse_id: nurseId });
     renderTab(currentTab);
