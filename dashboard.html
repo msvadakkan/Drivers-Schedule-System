@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Schedule — Driver Schedule System</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="app-nav">
+    <div class="brand">🚐 Driver Schedule System</div>
+    <div class="nav-right">
+      <span class="user-name" id="nav-name"></span>
+      <span class="role-badge" id="nav-role"></span>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <!-- Profile -->
+    <div class="card" id="profile-card" style="margin-bottom:24px;display:none">
+      <div class="profile-strip">
+        <div class="profile-avatar" id="profile-avatar"></div>
+        <div>
+          <div class="profile-name" id="profile-name"></div>
+          <div class="profile-meta" id="profile-meta"></div>
+          <div class="profile-phone" id="profile-phone"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="today">☀️ Today</button>
+      <button class="tab-btn"        data-tab="calendar">📅 Calendar</button>
+      <button class="tab-btn"        data-tab="all">📋 All Schedules</button>
+    </div>
+
+    <div id="schedule-output">
+      <div class="empty-state"><p>Loading…</p></div>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

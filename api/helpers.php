@@ -1,0 +1,79 @@
+<?php
+session_start();
+header('Content-Type: application/json');
+
+define('DATA_DIR',       __DIR__ . '/../data');
+define('USERS_FILE',     DATA_DIR . '/users.json');
+define('SCHEDULES_FILE', DATA_DIR . '/schedules.json');
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+function initData() {
+    if (!is_dir(DATA_DIR)) mkdir(DATA_DIR, 0755, true);
+    if (!file_exists(USERS_FILE)) {
+        $admin = [[
+            'id'            => 1,
+            'name'          => 'Administrator',
+            'email'         => 'admin@system.com',
+            'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
+            'role'          => 'admin',
+            'phone'         => '',
+            'created_at'    => date('Y-m-d H:i:s')
+        ]];
+        file_put_contents(USERS_FILE, json_encode($admin, JSON_PRETTY_PRINT), LOCK_EX);
+    }
+    if (!file_exists(SCHEDULES_FILE)) {
+        file_put_contents(SCHEDULES_FILE, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
+    }
+}
+
+// ─── Data helpers ─────────────────────────────────────────────────────────────
+function readUsers() {
+    initData();
+    return json_decode(file_get_contents(USERS_FILE), true) ?: [];
+}
+function writeUsers($users) {
+    file_put_contents(USERS_FILE, json_encode(array_values($users), JSON_PRETTY_PRINT), LOCK_EX);
+}
+function readSchedules() {
+    initData();
+    return json_decode(file_get_contents(SCHEDULES_FILE), true) ?: [];
+}
+function writeSchedules($schedules) {
+    file_put_contents(SCHEDULES_FILE, json_encode(array_values($schedules), JSON_PRETTY_PRINT), LOCK_EX);
+}
+function getUserById($id) {
+    foreach (readUsers() as $u) { if ($u['id'] == $id) return $u; }
+    return null;
+}
+function nextId($items) {
+    return empty($items) ? 1 : max(array_column($items, 'id')) + 1;
+}
+function enrichSchedule($s, $userMap) {
+    $d = ($s['driver_id'] && isset($userMap[$s['driver_id']])) ? $userMap[$s['driver_id']] : null;
+    $n = ($s['nurse_id']  && isset($userMap[$s['nurse_id']]))  ? $userMap[$s['nurse_id']]  : null;
+    return array_merge($s, [
+        'driver_name'  => $d ? $d['name']  : null,
+        'driver_phone' => $d ? $d['phone'] : null,
+        'nurse_name'   => $n ? $n['name']  : null,
+        'nurse_phone'  => $n ? $n['phone'] : null,
+    ]);
+}
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+function requireAuth() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+    return ['id' => $_SESSION['user_id'], 'role' => $_SESSION['user_role'], 'name' => $_SESSION['user_name']];
+}
+function requireAdmin() {
+    $u = requireAuth();
+    if ($u['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['error' => 'Admins only']);
+        exit;
+    }
+    return $u;
+}
