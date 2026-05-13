@@ -7,7 +7,7 @@ const today      = new Date().toISOString().slice(0, 10);
 let calYear      = new Date().getFullYear();
 let calMonth     = new Date().getMonth();
 let calSelected  = null;
-let scheduleDateFilter = today; // default: today
+let scheduleDateFilter = '';
 
 // ─── API helper ──────────────────────────────────────────────────────────────
 async function api(url, method = 'GET', body = null) {
@@ -324,7 +324,15 @@ function setModalError(msg) {
 }
 function setSaving(saving) {
   const btn = document.getElementById('modal-save-btn');
-  if (btn) { btn.disabled = saving; btn.textContent = saving ? 'Saving…' : 'Save'; }
+  if (!btn) return;
+  if (saving) {
+    btn.dataset.orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.orig || 'Save';
+  }
 }
 
 // ─── User Modal ──────────────────────────────────────────────────────────────
