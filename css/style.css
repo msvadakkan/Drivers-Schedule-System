@@ -46,7 +46,7 @@ body {
 }
 
 /* ── Page entry ── */
-body { animation: fadeIn .35s ease; }
+body { animation: fadeIn .3s ease forwards; }
 
 /* ── Nav ── */
 .app-nav {
@@ -87,7 +87,7 @@ body { animation: fadeIn .35s ease; }
 .main-content { max-width: 1180px; margin: 28px auto; padding: 0 20px; }
 
 /* ── Stats ── */
-.stats-row { animation: slideDown .4s ease; }
+.stats-row { animation: slideDown .4s ease forwards; }
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -127,7 +127,7 @@ body { animation: fadeIn .35s ease; }
 .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 /* ── Card ── */
-.card { animation: slideUp .4s ease; }
+.card { animation: slideUp .4s ease forwards; }
 .card {
   background: var(--surface);
   border-radius: 14px;
@@ -257,7 +257,7 @@ tr:hover td { background: #fdf5f9; }
 
 /* ── Schedule cards (dashboard) ── */
 .schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 16px; }
-.sched-card { animation: slideUp .38s ease; }
+.sched-card { animation: slideUp .38s ease forwards; }
 .sched-card {
   background: var(--surface); border-radius: 14px;
   box-shadow: 0 1px 6px rgba(181,0,108,.08);
