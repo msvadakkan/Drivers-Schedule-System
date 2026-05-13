@@ -63,14 +63,14 @@ body { animation: fadeIn .35s ease; }
   z-index: 50;
 }
 .app-nav .brand {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--primary);
   display: flex;
   align-items: center;
-  gap: 8px;
-  letter-spacing: -.2px;
+  gap: 10px;
+  text-decoration: none;
 }
+.nav-logo { height: 38px; width: auto; object-fit: contain; display: block; }
+.brand-divider { width: 1px; height: 22px; background: var(--border); }
+.brand-sub { font-size: 12px; font-weight: 700; color: var(--text-sub); letter-spacing: .2px; }
 .app-nav .nav-right { display: flex; align-items: center; gap: 12px; }
 .app-nav .user-name { font-size: 13px; color: var(--text-sub); font-weight: 500; }
 .role-badge {
