@@ -70,7 +70,7 @@
     <h1>Driver Schedule System</h1>
     <p>Manage and view driver &amp; nurse schedules in one place.</p>
 
-    <a href="login.html" class="hero-btn">🔐 Go to Login</a>
+    <a href="login.html" class="hero-btn" id="login-btn">🔐 Go to Login</a>
 
     <div class="roles">
       <div class="role-card">
@@ -87,5 +87,14 @@
       </div>
     </div>
   </div>
+  <script>
+    (async () => {
+      try {
+        const r = await fetch('api/setup.php');
+        const d = await r.json();
+        if (d.needed) document.getElementById('login-btn').href = 'setup.html';
+      } catch {}
+    })();
+  </script>
 </body>
 </html>

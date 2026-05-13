@@ -10,24 +10,16 @@ define('DATA_DIR',       __DIR__ . '/../data');
 define('USERS_FILE',     DATA_DIR . '/users.json');
 define('SCHEDULES_FILE', DATA_DIR . '/schedules.json');
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
 function initData() {
     if (!is_dir(DATA_DIR)) mkdir(DATA_DIR, 0755, true);
-    if (!file_exists(USERS_FILE)) {
-        $admin = [[
-            'id'            => 1,
-            'name'          => 'Administrator',
-            'email'         => 'admin@system.com',
-            'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
-            'role'          => 'admin',
-            'phone'         => '',
-            'created_at'    => date('Y-m-d H:i:s')
-        ]];
-        file_put_contents(USERS_FILE, json_encode($admin, JSON_PRETTY_PRINT), LOCK_EX);
-    }
-    if (!file_exists(SCHEDULES_FILE)) {
-        file_put_contents(SCHEDULES_FILE, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
-    }
+    if (!file_exists(USERS_FILE))     file_put_contents(USERS_FILE,     json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
+    if (!file_exists(SCHEDULES_FILE)) file_put_contents(SCHEDULES_FILE, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
+}
+
+function setupNeeded() {
+    initData();
+    $users = json_decode(file_get_contents(USERS_FILE), true) ?: [];
+    return empty(array_filter($users, fn($u) => $u['role'] === 'admin'));
 }
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────

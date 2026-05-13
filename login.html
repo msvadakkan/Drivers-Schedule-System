@@ -15,11 +15,6 @@
         <p>Sign in to view your schedule</p>
       </div>
 
-      <div class="login-hint">
-        <strong>Default Admin:</strong><br>
-        Email: admin@system.com &nbsp;|&nbsp; Password: admin123
-      </div>
-
       <div id="error-msg" class="alert-error" style="display:none"></div>
 
       <form id="login-form">
@@ -40,9 +35,12 @@
   </div>
 
   <script>
-    // Redirect if already logged in
     (async () => {
       try {
+        const setup = await fetch('api/setup.php');
+        const sd    = await setup.json();
+        if (sd.needed) { location.href = 'setup.html'; return; }
+
         const r = await fetch('api/me.php');
         if (r.ok) {
           const u = await r.json();
